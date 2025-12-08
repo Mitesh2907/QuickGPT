@@ -9,9 +9,12 @@ import messageRouter from './routes/messageRoutes.js'
 import paymentRoutes from "./routes/paymentRoutes.js";
 import adminRoutes from "./routes/adminRoutes.js";
 
+
 dotenv.config();
 
 const app = express();
+
+console.log("GROQ KEY:", process.env.GROQ_API_KEY);
 
 // Database
 await connectDB();
