@@ -1,12 +1,24 @@
 import mongoose from "mongoose";
 
+let isConnected = false; // prevent re-connection in serverless
+
 const connectDB = async () => {
-    try {
-        mongoose.connection.on('connected', ()=> console.log('Database connected'))
-        await mongoose.connect(`${process.env.MONGODB_URI}/quickgpt`)
-    } catch (error) {
-        console.log(error.message)
-    }
-}
+  if (isConnected) {
+    console.log("MongoDB already connected");
+    return;
+  }
+
+  try {
+    const conn = await mongoose.connect(process.env.MONGODB_URI, {
+      dbName: "quickgpt",
+    });
+
+    isConnected = conn.connections[0].readyState === 1;
+
+    console.log("MongoDB Connected Successfully");
+  } catch (error) {
+    console.error("DB Connection Error:", error.message);
+  }
+};
 
 export default connectDB;
