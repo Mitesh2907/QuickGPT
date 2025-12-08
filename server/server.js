@@ -13,9 +13,9 @@ import adminRoutes from "./routes/adminRoutes.js";
 dotenv.config();
 
 const app = express();
-const server = http.createServer(app)
 
-console.log("GROQ KEY:", process.env.GROQ_API_KEY);
+
+
 
 // Database
 await connectDB();
@@ -25,9 +25,7 @@ app.use(cors());
 app.use(express.json());
 
 // Debugging
-console.log("cwd:", process.cwd());
-console.log("ENV ADMIN_USERNAME:", process.env.ADMIN_USERNAME);
-console.log("ENV ADMIN_PASSWORD:", process.env.ADMIN_PASSWORD);
+
 
 // Routes
 app.get('/', (req, res) => res.send('Server is Live!'));
@@ -40,9 +38,9 @@ app.use("/api/admin", adminRoutes);
 // Server Listen
 if (process.env.NODE_ENV !== "production") {
     const PORT = process.env.PORT || 3000;
-    server.listen(PORT, () => {
+    app.listen(PORT, () => {
         console.log(`Server running on port ${PORT}`);
     });
 }
 
-export default server;
+export default app;
