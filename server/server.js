@@ -9,23 +9,22 @@ import messageRouter from './routes/messageRoutes.js'
 import paymentRoutes from "./routes/paymentRoutes.js";
 import adminRoutes from "./routes/adminRoutes.js";
 
-
 dotenv.config();
 
 const app = express();
 
+// ⭐ CORS MUST BE FIRST
+app.use(cors({
+    origin: "*",
+    methods: ["GET", "POST", "PUT", "DELETE"],
+    credentials: true
+}));
 
-
-
-// Database
-await connectDB();
-
-// Middlewares
-app.use(cors());
+// ⭐ Body parser
 app.use(express.json());
 
-// Debugging
-
+// ⭐ Connect DB
+await connectDB();
 
 // Routes
 app.get('/', (req, res) => res.send('Server is Live!'));
@@ -35,7 +34,7 @@ app.use('/api/message', messageRouter);
 app.use("/api/payment", paymentRoutes);
 app.use("/api/admin", adminRoutes);
 
-// Server Listen
+// Server listen for local development only
 if (process.env.NODE_ENV !== "production") {
     const PORT = process.env.PORT || 3000;
     app.listen(PORT, () => {
