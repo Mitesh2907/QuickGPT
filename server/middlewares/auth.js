@@ -4,26 +4,34 @@ import User from '../models/User.js';
 // ======================
 // USER PROTECTION (OK)
 // ======================
-export const protect = async (req, res, next) => {
-    let token = req.headers.authorization;
+export const protect = (req, res, next) => {
+    const authHeader = req.headers.authorization;
+
+    if (!authHeader || !authHeader.startsWith("Bearer ")) {
+        return res.status(401).json({ success: false, message: "Not authorized, no token" });
+    }
+
+    const token = authHeader.split(" ")[1];
 
     try {
-        const decoded = jwt.verify(token, process.env.JWT_SECRET);
-        const userId = decoded.id;
+        // Use default secret if env var not set
+        const secret = process.env.JWT_SECRET || 'default-jwt-secret-for-development';
+        const decoded = jwt.verify(token, secret);
 
-        const user = await User.findById(userId);
-
-        if (!user) {
-            return res.json({ success: false, message: "Not authorized, user not found" });
-        }
-
-        req.user = user;  // attaching user object
+        // Create user object from JWT token data
+        req.user = {
+          _id: decoded.id,
+          name: decoded.name,
+          email: decoded.email
+        };
         next();
 
     } catch (error) {
-        res.status(401).json({ message: "Not authorized, token failed" });
+        console.error("JWT verification failed:", error.message);
+        return res.status(401).json({ success: false, message: "Not authorized, invalid token" });
     }
 };
+
 
 
 // ======================

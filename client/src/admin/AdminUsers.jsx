@@ -8,7 +8,9 @@ const AdminUsers = () => {
   const load = async () => {
     try {
       const token = localStorage.getItem("adminToken");
-      const { data } = await axios.get("/api/admin/users", { headers: { Authorization: token }});
+      const { data } = await axios.get("/api/admin/users", {
+        headers: { Authorization: `Bearer ${token}` }
+      });
       if (data.success) setUsers(data.users);
       else toast.error(data.message);
     } catch (err) {
@@ -16,7 +18,14 @@ const AdminUsers = () => {
     }
   };
 
-  useEffect(() => { load() }, []);
+  useEffect(() => {
+    const token = localStorage.getItem("adminToken");
+    if (token) {
+      load();
+    } else {
+      console.log("AdminUsers - no token, skipping load");
+    }
+  }, []);
 
   return (
     <div>
@@ -26,8 +35,8 @@ const AdminUsers = () => {
           <div key={u._id} className="p-3 border rounded bg-white">
             <div className="flex justify-between">
               <div>
-                <div className="font-medium">{u.name} ({u.email})</div>
-                <div className="text-sm text-gray-500">Credits: {u.credits}</div>
+                <div className="font-medium">{u.name}</div>
+                <div className="text-sm text-gray-600">{u.email}</div>
               </div>
               <div className="text-sm text-gray-500">Joined: {new Date(u.createdAt).toLocaleString()}</div>
             </div>

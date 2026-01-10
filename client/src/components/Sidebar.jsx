@@ -14,6 +14,7 @@ const Sidebar = ({ isMenuOpen, setIsMenuOpen }) => {
   const {
     chats,
     setSelectedChat,
+    selectedChat,
     theme,
     setTheme,
     user,
@@ -43,8 +44,7 @@ const Sidebar = ({ isMenuOpen, setIsMenuOpen }) => {
 
       const { data } = await axios.post(
         "/api/chat/delete",
-        { chatId },
-        { headers: { Authorization: token } }
+        { chatId }
       );
 
       if (data.success) {
@@ -112,8 +112,11 @@ const Sidebar = ({ isMenuOpen, setIsMenuOpen }) => {
                 setIsMenuOpen(false);
               }}
               key={chat._id}
-              className="p-2 px-4 dark:bg-[#57317C]/10 border border-gray-300 
-              dark:border-[#80609F]/15 rounded-md cursor-pointer flex justify-between group"
+              className={`p-2 px-4 rounded-md cursor-pointer flex justify-between group transition-colors duration-200 ${
+                selectedChat && selectedChat._id === chat._id
+                  ? "bg-purple-600 text-white border-purple-600 dark:bg-purple-600 dark:text-white"
+                  : "dark:bg-[#57317C]/10 border border-gray-300 dark:border-[#80609F]/15 hover:bg-gray-100 dark:hover:bg-[#57317C]/20"
+              }`}
             >
               <div>
                 <p className="truncate w-full">
@@ -155,21 +158,6 @@ const Sidebar = ({ isMenuOpen, setIsMenuOpen }) => {
         </div>
       </div>
 
-      {/* Credits Page */}
-      <div
-        onClick={() => {
-          navigate("/credits");
-          setIsMenuOpen(false);
-        }}
-        className="flex items-center gap-2 p-3 mt-4 border border-gray-300 
-        dark:border-white/15 rounded-md cursor-pointer hover:scale-103 transition-all"
-      >
-        <img src={assets.diamond_icon} className="w-4.5 dark:invert" alt="" />
-        <div className="flex flex-col text-sm">
-          <p>Credits : {user?.credits}</p>
-          <p className="text-xs text-gray-400">Purchase credits to use quickGPT</p>
-        </div>
-      </div>
 
       {/* Dark Mode */}
       <div

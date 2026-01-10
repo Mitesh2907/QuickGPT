@@ -1,6 +1,6 @@
 import mongoose from "mongoose";
 import User from "./models/User.js";
-import "dotenv/config";
+// dotenv is already configured in server.js
 
 mongoose.connect(process.env.MONGO_URI)
   .then(() => console.log("Mongo Connected"))

@@ -10,21 +10,30 @@ const AdminLogin = () => {
 
   const loginAdmin = async (e) => {
     e.preventDefault();
+    console.log("Attempting admin login with:", { username, password });
+
     try {
+      console.log("Making request to:", axios.defaults.baseURL + "/api/admin/login");
       const { data } = await axios.post("/api/admin/login", {
         username,
         password,
       });
+      console.log("Admin login response:", data);
 
       if (data.success) {
+        console.log("Admin login success, token:", data.token ? data.token.substring(0, 20) + "..." : "undefined");
         localStorage.setItem("adminToken", data.token);
+        console.log("Admin token saved to localStorage, checking:", localStorage.getItem("adminToken") ? "saved" : "failed");
         toast.success("Admin Login Successful");
         navigate("/admin/dashboard");
       } else {
         toast.error(data.message);
       }
     } catch (err) {
-      toast.error("Invalid credentials");
+      console.error("Admin login error:", err);
+      console.error("Error response:", err.response?.data);
+      console.error("Error status:", err.response?.status);
+      toast.error(err.response?.data?.message || err.message || "Login failed");
     }
   };
 

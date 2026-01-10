@@ -12,6 +12,17 @@
   --color-primary: #E6CCFF;
 }
 
+/* Global background and overscroll fix */
+html, body {
+  background-color: #0f0f0f; /* Dark theme background */
+  overscroll-behavior: none; /* Disable overscroll bounce */
+  min-height: 100vh;
+}
+
+.dark {
+  background-color: #0f0f0f;
+}
+
 ::-webkit-scrollbar {
   display: none;
 }

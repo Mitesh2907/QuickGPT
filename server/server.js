@@ -9,36 +9,54 @@ import messageRouter from './routes/messageRoutes.js'
 import paymentRoutes from "./routes/paymentRoutes.js";
 import adminRoutes from "./routes/adminRoutes.js";
 
-dotenv.config();
+dotenv.config({ silent: true });
 
 const app = express();
 
-// ⭐ CORS MUST BE FIRST
-app.use(cors({
-    origin: "*",
-    methods: ["GET", "POST", "PUT", "DELETE"],
-    credentials: true
-}));
+// Global request logging (only for debugging)
+app.use((req, res, next) => {
+  if (req.url.includes('/api/admin')) {
+    console.log(`🌐 ${req.method} ${req.url}`);
+  }
+  next();
+});
 
-// ⭐ Body parser
-app.use(express.json());
+app.use(express.json({ limit: "5mb" }));
+app.use(cors());
+
 
 // ⭐ Connect DB
 await connectDB();
 
 // Routes
 app.get('/', (req, res) => res.send('Server is Live!'));
+
+// Test route to verify Express is working
+app.get('/test', (req, res) => {
+  console.log('🧪 Test route hit');
+  res.json({ success: true, message: 'Express is working!' });
+});
+
+// Admin routes first (test for conflicts)
+app.use("/api/admin", adminRoutes);
+
 app.use('/api/user', userRouter);
 app.use('/api/chat', chatRouter);
 app.use('/api/message', messageRouter);
 app.use("/api/payment", paymentRoutes);
-app.use("/api/admin", adminRoutes);
 
 // Server listen for local development only
+const PORT = process.env.PORT || 3000;
+
+// console.log('Starting server...');
+// console.log('PORT:', PORT);
+
+
+
+
 if (process.env.NODE_ENV !== "production") {
-    const PORT = process.env.PORT || 3000;
     app.listen(PORT, () => {
-        console.log(`Server running on port ${PORT}`);
+        console.log(`✅ Server running on port ${PORT}`);
     });
 }
 

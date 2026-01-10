@@ -7,7 +7,7 @@ import toast from 'react-hot-toast';
 const ChatBox = () => {
   const containerRef = useRef(null);
 
-  const { selectedChat, theme, user, axios, token, setUser } = useAppContext();
+  const { selectedChat, theme, user, axios, token, setUser, setChats } = useAppContext();
 
   const [messages, setMessages] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -45,18 +45,22 @@ const ChatBox = () => {
       // API CALL
       const { data } = await axios.post(
         `/api/message/${mode}`,
-        { chatId: selectedChat._id, prompt: promptCopy, isPublished },
-        { headers: { Authorization: token } }
+        { chatId: selectedChat._id, prompt: promptCopy, isPublished }
       );
 
       if (data.success) {
-        setMessages((prev) => [...prev, data.reply]);
+        const newMessage = data.reply;
+        setMessages((prev) => [...prev, newMessage]);
 
-        // Reduce credits instantly
-        setUser((prev) => ({
-          ...prev,
-          credits: prev.credits - (mode === "image" ? 2 : 1),
-        }));
+        // Also update the selectedChat in context to persist the AI reply
+        setChats(prevChats =>
+          prevChats.map(chat =>
+            chat._id === selectedChat._id
+              ? { ...chat, messages: [...(chat.messages || []), newMessage] }
+              : chat
+          )
+        );
+
       } else {
         toast.error(data.message);
         setPrompt(promptCopy);
@@ -74,7 +78,9 @@ const ChatBox = () => {
   // ------------------------
   useEffect(() => {
     if (selectedChat) {
-      setMessages(selectedChat.messages);
+      setMessages(selectedChat.messages || []);
+    } else {
+      setMessages([]);
     }
   }, [selectedChat]);
 

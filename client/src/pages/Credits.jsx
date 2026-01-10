@@ -11,9 +11,7 @@ const Credits = () => {
   // ✅ Fetch Plans
   const fetchPlans = async () => {
     try {
-      const { data } = await axios.get("/api/payment/plans", {
-        headers: { Authorization: token },
-      });
+      const { data } = await axios.get("/api/payment/plans");
 
       if (data.success) {
         setPlans(data.plans);
@@ -31,10 +29,7 @@ const Credits = () => {
     try {
       const { data } = await axios.post(
         "/api/payment/purchase",
-        { planId },
-        {
-          headers: { Authorization: token },
-        }
+        { planId }
       );
 
       if (data.success) {

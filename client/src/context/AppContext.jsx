@@ -2,7 +2,15 @@ import { createContext, useContext, useEffect, useState } from "react";
 import axios from "axios";
 import toast from "react-hot-toast";
 
-axios.defaults.baseURL = import.meta.env.VITE_SERVER_URL;
+// ✅ SET GLOBAL AXIOS DEFAULTS
+axios.defaults.baseURL = 'http://localhost:3000';
+axios.defaults.headers.common["Content-Type"] = "application/json";
+
+// ✅ CREATE PROPER AXIOS INSTANCE (for context use)
+const api = axios.create({
+  baseURL: 'http://localhost:3000',
+  headers: { "Content-Type": "application/json" },
+});
 
 const AppContext = createContext();
 
@@ -14,19 +22,32 @@ export const AppContextProvider = ({ children }) => {
   const [token, setToken] = useState(localStorage.getItem("token") || null);
   const [loadingUser, setLoadingUser] = useState(true);
 
+
+  // Attach token automatically
+  useEffect(() => {
+    if (token) {
+      api.defaults.headers.common["Authorization"] = `Bearer ${token}`;
+    } else {
+      delete api.defaults.headers.common["Authorization"];
+    }
+  }, [token]);
+
   const fetchUser = async () => {
     try {
-      const { data } = await axios.get("/api/user/data", {
-        headers: { Authorization: token },
-      });
+      console.log("Fetching user data...");
+      const { data } = await api.get("/api/user/data");
+      console.log("User data response:", data);
 
       if (data.success) {
         setUser(data.user);
+        console.log("User set successfully");
       } else {
         toast.error(data.message);
       }
+
     } catch (error) {
-      toast.error(error.message);
+      console.error("Fetch user error:", error);
+      toast.error("Failed to load user data");
     } finally {
       setLoadingUser(false);
     }
@@ -36,13 +57,16 @@ export const AppContextProvider = ({ children }) => {
     try {
       if (!user) return toast("Login to create new chat");
 
-      window.location.href = "/";
+      const { data } = await api.get("/api/chat/create");
+      if (data.success && data.chat) {
+        // Add the new chat to the chats list and select it
+        setChats(prev => [data.chat, ...prev]);
+        setSelectedChat(data.chat);
+      } else {
+        // Fallback: refetch all chats
+        await fetchUserChats();
+      }
 
-      await axios.get("/api/chat/create", {
-        headers: { Authorization: token },
-      });
-
-      await fetchUserChats();
     } catch (error) {
       toast.error(error.message);
     }
@@ -50,49 +74,51 @@ export const AppContextProvider = ({ children }) => {
 
   const fetchUserChats = async () => {
     try {
-      const { data } = await axios.get("/api/chat/get", {
-        headers: { Authorization: token },
-      });
+      console.log("🔄 Fetching user chats...");
+      const { data } = await api.get("/api/chat/get");
+      console.log("📨 Chats response:", data);
 
       if (data.success) {
+        console.log("✅ Setting", data.chats.length, "chats");
         setChats(data.chats);
 
-        if (data.chats.length === 0) {
-          await createNewChat();
+        // Preserve currently selected chat if it still exists
+        if (selectedChat) {
+          const updatedSelectedChat = data.chats.find(chat => chat._id === selectedChat._id);
+          if (updatedSelectedChat) {
+            setSelectedChat(updatedSelectedChat);
+          } else {
+            // If selected chat no longer exists, select the first one
+            setSelectedChat(data.chats[0] || null);
+          }
         } else {
-          setSelectedChat(data.chats[0]);
+          // No chat was selected, select the first one
+          setSelectedChat(data.chats[0] || null);
         }
       } else {
         toast.error(data.message);
       }
+
     } catch (error) {
       toast.error(error.message);
     }
   };
 
   useEffect(() => {
-    if (theme === "dark") {
-      document.documentElement.classList.add("dark");
-    } else {
-      document.documentElement.classList.remove("dark");
-    }
+    if (theme === "dark") document.documentElement.classList.add("dark");
+    else document.documentElement.classList.remove("dark");
+
     localStorage.setItem("theme", theme);
   }, [theme]);
 
   useEffect(() => {
-    if (user) {
-      fetchUserChats();
-    } else {
-      setChats([]);
-      setSelectedChat(null);
-    }
-  }, [user]);
-
-  useEffect(() => {
     if (token) {
       fetchUser();
+      fetchUserChats(); // Also load chats when user is authenticated
     } else {
       setUser(null);
+      setChats([]); // Clear chats when not authenticated
+      setSelectedChat(null);
       setLoadingUser(false);
     }
   }, [token]);
@@ -112,7 +138,7 @@ export const AppContextProvider = ({ children }) => {
     fetchUserChats,
     token,
     setToken,
-    axios,
+    axios: api,
   };
 
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>;

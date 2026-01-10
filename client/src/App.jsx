@@ -3,7 +3,6 @@ import { Route, Routes, useLocation, Navigate } from 'react-router-dom';
 
 import Sidebar from './components/Sidebar';
 import ChatBox from './components/ChatBox';
-import Credits from './pages/Credits';
 import Community from './pages/Community';
 import Payment from './pages/Payment';
 import Login from './pages/Login';
@@ -62,7 +61,6 @@ const App = () => {
 
             <Routes>
               <Route path="/" element={<ChatBox />} />
-              <Route path="/credits" element={<Credits />} />
               <Route path="/community" element={<Community />} />
               <Route path="/payment" element={<Payment />} />
             </Routes>

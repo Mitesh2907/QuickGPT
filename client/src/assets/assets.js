@@ -50,7 +50,6 @@ export const dummyUserData = {
     "name": "GreatStack",
     "email": "admin@example.com",
     "password": "$2b$10$VESVdPDjL5LF.KCU6jKyqeXNSLASAAfpR2kkIJExtMO.PJvZJAudy",
-    "credits": 200,
 }
 
 // copy for server controllers
@@ -59,22 +58,19 @@ export const dummyPlans = [
         _id: "basic",
         name: "Basic",
         price: 50,
-        credits: 100,
-        features: ['100 text generations', '50 image generations', 'Standard support', 'Access to basic models']
+        features: ['Unlimited text generations', '50 image generations', 'Standard support', 'Access to basic models']
     },
     {
         _id: "pro",
         name: "Pro",
         price: 100,
-        credits: 500,
-        features: ['500 text generations', '200 image generations', 'Priority support', 'Access to pro models', 'Faster response time']
+        features: ['Unlimited text generations', '200 image generations', 'Priority support', 'Access to pro models', 'Faster response time']
     },
     {
         _id: "premium",
         name: "Premium",
         price: 150,
-        credits: 1000,
-        features: ['1000 text generations', '500 image generations', '24/7 VIP support', 'Access to premium models', 'Dedicated account manager']
+        features: ['Unlimited text generations', '500 image generations', '24/7 VIP support', 'Access to premium models', 'Dedicated account manager']
     }
 ];
 

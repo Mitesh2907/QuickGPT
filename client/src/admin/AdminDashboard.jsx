@@ -1,12 +1,8 @@
-import React, { useEffect, useState } from "react";
-import axios from "axios";
-import toast from "react-hot-toast";
+import React, { useEffect } from "react";
 import AdminUsers from "./AdminUsers";
-import AdminTransactions from "./AdminTransactions";
 import { useNavigate } from "react-router-dom";
 
 const AdminDashboard = () => {
-  const [view, setView] = useState("transactions"); // or "users"
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -26,13 +22,12 @@ const AdminDashboard = () => {
           </div>
         </header>
 
-        <nav className="mb-4 space-x-2">
-          <button onClick={() => setView("transactions")} className={`px-4 py-2 rounded ${view==="transactions" ? "bg-purple-600 text-white" : "border"}`}>Transactions</button>
-          <button onClick={() => setView("users")} className={`px-4 py-2 rounded ${view==="users" ? "bg-purple-600 text-white" : "border"}`}>Users</button>
+        <nav className="mb-4">
+          <button className="px-4 py-2 bg-purple-600 text-white rounded">Users</button>
         </nav>
 
         <main>
-          {view === "transactions" ? <AdminTransactions /> : <AdminUsers />}
+          <AdminUsers />
         </main>
       </div>
     </div>

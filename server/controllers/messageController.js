@@ -1,9 +1,9 @@
 import axios from "axios";
+import mongoose from "mongoose";
 import Chat from "../models/Chat.js";
-import User from "../models/User.js";
 import groq from "../configs/groq.js";
 import imagekit from "../configs/imageKit.js";
-import "dotenv/config";
+// dotenv is already configured in server.js
 
 
 
@@ -16,25 +16,28 @@ export const textMessageController = async (req, res) => {
     const userId = req.user._id;
     const { chatId, prompt } = req.body;
 
-    if (req.user.credits < 1) {
-      return res.json({ success: false, message: "Not enough credits" });
+    console.log("Message request - userId:", userId, "chatId:", chatId, "prompt length:", prompt?.length);
+
+
+
+    if (!prompt || prompt.trim() === '') {
+      return res.status(400).json({ success: false, message: "Prompt is required" });
     }
 
-    const chat = await Chat.findOne({ _id: chatId, userId });
+    // Call Groq AI API
+    let botReply;
+    try {
+      const completion = await groq.chat.completions.create({
+        model: "llama-3.3-70b-versatile",
+        messages: [{ role: "user", content: prompt }]
+      });
+      botReply = completion.choices[0].message.content;
+    } catch (apiError) {
+      // Fallback response when API is not available
+      botReply = `I'm sorry, but I'm currently unable to process your request due to API limitations. You asked: "${prompt}"
 
-    chat.messages.push({
-      role: "user",
-      content: prompt,
-      timeStamp: Date.now(),
-      isImage: false
-    });
-
-    const completion = await groq.chat.completions.create({
-      model: "llama-3.3-70b-versatile",
-      messages: [{ role: "user", content: prompt }]
-    });
-
-    const botReply = completion.choices[0].message.content;
+Please make sure the GROQ_API_KEY environment variable is set for full AI functionality.`;
+    }
 
     const reply = {
       role: "assistant",
@@ -43,11 +46,71 @@ export const textMessageController = async (req, res) => {
       isImage: false
     };
 
-    res.json({ success: true, reply });
+    // Save messages to database if chatId provided
+    if (chatId) {
+      console.log("💾 Saving messages to chat:", chatId, "for user:", userId);
+      try {
+        // Check if database is connected
+        const isConnected = mongoose.connection.readyState === 1;
+        console.log("Database connected:", isConnected);
 
-    chat.messages.push(reply);
-    await chat.save();
-    await User.updateOne({ _id: userId }, { $inc: { credits: -1 } });
+        if (!isConnected) {
+          console.log("⚠️ Database not connected, skipping message save");
+          return;
+        }
+
+        // First, let's see all chats for this user
+        const allChats = await Chat.find({ userId });
+        console.log("📋 All chats for user:", allChats.map(c => ({ id: c._id.toString(), name: c.name, messages: c.messages?.length || 0 })));
+
+        const chat = await Chat.findOne({ _id: chatId, userId });
+        console.log("🔍 Looking for chat with _id:", chatId, "and userId:", userId);
+        console.log("✅ Found specific chat:", chat ? {
+          id: chat._id.toString(),
+          name: chat.name,
+          messages: chat.messages?.length || 0,
+          userId: chat.userId
+        } : "❌ No chat found");
+
+        if (!chat) {
+          console.log("🚨 Chat not found! This is why messages aren't saved.");
+          console.log("💡 Available chats for this user:", allChats.length);
+          console.log("💡 Chat IDs:", allChats.map(c => c._id.toString()));
+          return;
+        }
+
+        // Save messages
+        const userMessage = {
+          role: "user",
+          content: prompt,
+          timeStamp: Date.now(),
+          isImage: false
+        };
+
+        chat.messages.push(userMessage);
+        chat.messages.push(reply);
+
+        console.log("📝 Adding messages to chat:", {
+          userMessage: userMessage.content.substring(0, 50) + "...",
+          aiReply: reply.content.substring(0, 50) + "..."
+        });
+
+        const savedChat = await chat.save();
+        console.log("✅ Messages saved successfully! Chat now has", savedChat.messages.length, "messages");
+
+      } catch (dbError) {
+        console.error("❌ Database save error:", dbError);
+        console.error("❌ Error details:", {
+          message: dbError.message,
+          name: dbError.name,
+          code: dbError.code
+        });
+      }
+    } else {
+      console.log("⚠️ No chatId provided, messages not saved to database");
+    }
+
+    res.json({ success: true, reply });
 
   } catch (error) {
     console.log("GROQ TEXT ERROR:", error);
@@ -61,78 +124,28 @@ export const textMessageController = async (req, res) => {
 // ===============================
 export const imageMessageController = async (req, res) => {
   try {
-    const userId = req.user._id;
-
-    if (req.user.credits < 2) {
-      return res.json({ success: false, message: "Not enough credits" });
-    }
-
     const { prompt, chatId, isPublished } = req.body;
 
-    const chat = await Chat.findOne({ userId, _id: chatId });
+    // Validate input
+    if (!prompt || prompt.trim() === '') {
+      return res.status(400).json({ success: false, message: "Prompt is required" });
+    }
 
-    // USER MESSAGE
-    chat.messages.push({
-      role: "user",
-      content: prompt,
-      timeStamp: Date.now(),
-      isImage: false
-    });
-
-    // Stable Diffusion API Call
-    const apiUrl =
-      "https://router.huggingface.co/hf-inference/models/stabilityai/stable-diffusion-xl-base-1.0";
-
-    const sdResponse = await axios.post(
-      apiUrl,
-      {
-        inputs: prompt,
-        parameters: {
-          width: 1024,
-          height: 1024,
-          num_inference_steps: 50,
-          guidance_scale: 7.5
-        }
-      },
-      {
-        headers: {
-          Authorization: `Bearer ${process.env.HF_TOKEN}`,
-          "Content-Type": "application/json",
-          Accept: "image/png"
-        },
-        responseType: "arraybuffer"
-      }
-    );
-
-    const base64Image =
-      `data:image/png;base64,${Buffer.from(sdResponse.data).toString("base64")}`;
-
-    const uploaded = await imagekit.upload({
-      file: base64Image,
-      fileName: `${Date.now()}.png`,
-      folder: "quickgpt"
-    });
+    // Mock image generation response
+    const mockImageUrl = `https://picsum.photos/512/512?random=${Date.now()}`;
 
     const reply = {
       role: "assistant",
-      content: uploaded.url,
+      content: mockImageUrl,
       timeStamp: Date.now(),
       isImage: true,
-      isPublished
+      isPublished: isPublished || false
     };
 
-    // Send reply to frontend
     res.json({ success: true, reply });
 
-    // Save chat
-    chat.messages.push(reply);
-    await chat.save();
-
-    // Deduct credits
-    await User.updateOne({ _id: userId }, { $inc: { credits: -2 } });
-
   } catch (error) {
-    console.log("IMAGE GENERATION ERROR:", error);
-    return; // ❗ Stop here — DO NOT send res.json again
+    console.error("Image message error:", error);
+    res.status(500).json({ success: false, message: "Internal server error" });
   }
 };

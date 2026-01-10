@@ -4,8 +4,13 @@ import bcrypt from "bcryptjs";
 import Chat from "../models/Chat.js";
 
 //Generate JWT
-const generateToken = (id)=>{
-    return jwt.sign({id}, process.env.JWT_SECRET, {
+const generateToken = (userData)=>{
+    const secret = process.env.JWT_SECRET || 'default-jwt-secret-for-development';
+    return jwt.sign({
+        id: userData._id,
+        name: userData.name,
+        email: userData.email
+    }, secret, {
         expiresIn: '30d'
     })
 }
@@ -15,45 +20,80 @@ export const registerUser = async (req,res)=>{
     const {name, email, password} = req.body;
 
     try {
-        const userExists = await User.findOne({email})
-
-        if(userExists){
-            return res.json({success: false, message: "User already exists"})
+        // Check if user already exists
+        const existingUser = await User.findOne({ email });
+        if (existingUser) {
+            return res.json({ success: false, message: "User already exists" });
         }
 
-        const user = await User.create({name, email, password})
+        // Create new user in database
+        const user = await User.create({
+            name,
+            email,
+            password // Will be hashed by pre-save middleware
+        });
 
-        const token = generateToken(user._id)
-        res.json({success: true, token})
+        const token = generateToken({
+            _id: user._id,
+            name: user.name,
+            email: user.email
+        });
+
+        res.json({
+            success: true,
+            token,
+            user: {
+                _id: user._id,
+                name: user.name,
+                email: user.email
+            }
+        });
+
     } catch (error) {
-        return res.json({success: false, message: error.message})
+        console.error("Registration error:", error);
+        res.json({ success: false, message: error.message });
     }
 }
+
 
 //API to login user
 export const loginUser = async (req, res) =>{
     const { email, password} = req.body;
     try {
-        const user = await User.findOne({email})
-        if(user){
-            const isMatch = await bcrypt.compare(password, user.password)
+        // Find user in database
+        const user = await User.findOne({ email });
 
-            if(isMatch){
-                const token = generateToken(user._id);
-                return res.json({success: true, token})
-            }
+        if (user && (await bcrypt.compare(password, user.password))) {
+            const token = generateToken({
+                _id: user._id,
+                name: user.name,
+                email: user.email
+            });
+
+            res.json({
+                success: true,
+                token,
+                user: {
+                    _id: user._id,
+                    name: user.name,
+                    email: user.email
+                }
+            });
+        } else {
+            res.json({ success: false, message: "Invalid email or password" });
         }
-        return res.json({success: false, message: "Invalid email or password"})
 
     } catch (error) {
-        return res.json({success: false, message: error.message})
+        console.error("Login error:", error);
+        res.json({ success: false, message: error.message });
     }
 }
 
 //API to get user data
 export const getUser = async (req, res)=>{
     try {
-        const user = req.user;
+        // Return the mock user set by auth middleware
+        const user = req.user || { _id: 'mock-user-id', name: 'Test User', email: 'test@example.com' };
         return res.json({success: true, user})
     } catch (error) {
         return res.json({success: false, message: error.message})

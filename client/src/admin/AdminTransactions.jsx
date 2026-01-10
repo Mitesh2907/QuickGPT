@@ -8,7 +8,18 @@ const AdminTransactions = () => {
   const load = async () => {
     try {
       const token = localStorage.getItem("adminToken");
-      const { data } = await axios.get("/api/admin/transactions", { headers: { Authorization: token }});
+      console.log("AdminTransactions - token from storage:", token ? "present (" + token.substring(0, 20) + "...)" : "missing");
+
+      if (!token) {
+        console.log("AdminTransactions - no token found, redirecting to login");
+        // Could redirect to login here
+        return;
+      }
+
+      const { data } = await axios.get("/api/admin/transactions", {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      console.log("AdminTransactions - response:", data);
       if (data.success) setTransactions(data.transactions);
       else toast.error(data.message);
     } catch (err) {
@@ -16,12 +27,21 @@ const AdminTransactions = () => {
     }
   };
 
-  useEffect(()=>{ load() }, []);
+  useEffect(() => {
+    const token = localStorage.getItem("adminToken");
+    if (token) {
+      load();
+    } else {
+      console.log("AdminTransactions - no token available");
+    }
+  }, []);
 
   const verify = async (orderId) => {
     try {
       const token = localStorage.getItem("adminToken");
-      const { data } = await axios.post("/api/admin/verify-payment", { orderId }, { headers: { Authorization: token }});
+      const { data } = await axios.post("/api/admin/verify-payment", { orderId }, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
       if (data.success) {
         toast.success(data.message);
         load();
@@ -40,7 +60,7 @@ const AdminTransactions = () => {
             <div>
               <div className="font-medium">Order: {t.orderId} — {t.planId}</div>
               <div className="text-sm text-gray-600">User: {t.userId.toString()}</div>
-              <div className="text-sm text-gray-600">Amount: ₹{t.amount} | Credits: {t.credits}</div>
+              <div className="text-sm text-gray-600">Amount: ₹{t.amount}</div>
               <div className="text-xs text-gray-500">Status: {t.status} | Paid: {String(t.isPaid)}</div>
             </div>
             <div className="flex flex-col gap-2">
