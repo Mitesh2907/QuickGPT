@@ -92,9 +92,10 @@ export const loginUser = async (req, res) =>{
 //API to get user data
 export const getUser = async (req, res)=>{
     try {
-        // Return the mock user set by auth middleware
-        const user = req.user || { _id: 'mock-user-id', name: 'Test User', email: 'test@example.com' };
-        return res.json({success: true, user})
+        // Since protect middleware is disabled, we can't rely on req.user
+        // The client should handle user data from localStorage
+        // Return null to indicate no authenticated user
+        return res.json({success: true, user: null})
     } catch (error) {
         return res.json({success: false, message: error.message})
     }

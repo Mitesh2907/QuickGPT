@@ -4,8 +4,8 @@ import { createChat, deleteChats, getChats } from '../controllers/chatController
 
 const chatRouter = express.Router();
 
-chatRouter.get('/create', protect, createChat)
-chatRouter.get('/get', protect, getChats)
-chatRouter.post('/delete', protect, deleteChats)
+chatRouter.get('/create', createChat)
+chatRouter.get('/get', getChats)
+chatRouter.post('/delete', deleteChats)
 
 export default chatRouter

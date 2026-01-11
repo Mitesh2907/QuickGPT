@@ -20,9 +20,9 @@ const Login = () => {
         setToken(data.token)
         localStorage.setItem('token', data.token)
 
-        // If user data is provided, update the context
+        // Store user data in localStorage
         if (data.user) {
-          // The user data will be fetched via the token when AppContext loads
+          localStorage.setItem('userData', JSON.stringify(data.user));
         }
       }else{
         toast.error(data.message)

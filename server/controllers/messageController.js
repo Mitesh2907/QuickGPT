@@ -13,7 +13,8 @@ import imagekit from "../configs/imageKit.js";
 
 export const textMessageController = async (req, res) => {
   try {
-    const userId = req.user._id;
+    // Use mock user for now (since protect middleware is disabled)
+    const userId = 'mock-user-id';
     const { chatId, prompt } = req.body;
 
     console.log("Message request - userId:", userId, "chatId:", chatId, "prompt length:", prompt?.length);

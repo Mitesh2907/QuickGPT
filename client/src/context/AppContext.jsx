@@ -39,8 +39,13 @@ export const AppContextProvider = ({ children }) => {
       console.log("User data response:", data);
 
       if (data.success) {
-        setUser(data.user);
-        console.log("User set successfully");
+        // Only update user if server returns user data
+        if (data.user) {
+          setUser(data.user);
+          console.log("User set from server:", data.user);
+        } else {
+          console.log("No user data from server, using localStorage");
+        }
       } else {
         toast.error(data.message);
       }
@@ -113,7 +118,21 @@ export const AppContextProvider = ({ children }) => {
 
   useEffect(() => {
     if (token) {
-      fetchUser();
+      // Try to load user data from localStorage first
+      const storedUserData = localStorage.getItem('userData');
+      if (storedUserData) {
+        try {
+          const userData = JSON.parse(storedUserData);
+          setUser(userData);
+          setLoadingUser(false);
+        } catch (error) {
+          console.error('Error parsing stored user data:', error);
+          fetchUser(); // Fallback to API call
+        }
+      } else {
+        fetchUser(); // Fallback to API call
+      }
+
       fetchUserChats(); // Also load chats when user is authenticated
     } else {
       setUser(null);
